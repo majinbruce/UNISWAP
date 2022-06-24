@@ -23,8 +23,8 @@ contract uniswapLite {
     //tracks eth stored per address
     mapping(address => uint256) public ethStoredPerAddress;
 
-    constructor(IERC20 _token) {
-        token = _token;
+    constructor(address _token) {
+        token = IERC20(_token);
         myTokenAddress = _token;
     }
 
@@ -42,25 +42,24 @@ contract uniswapLite {
             "UNISWAPLITE: amount of ether sent should be greater than min amount of eth desired"
         );
         require(
-            myToken.allowance(msg.sender, address(this)) >= amountToken,
+            token.allowance(msg.sender, address(this)) >= amountToken,
             "UNISWAPLITE: this contract does not have allowance to access your tokens"
         );
 
         token.safeTransferFrom(msg.sender, address(this), amountToken);
-        token.safeApprove(router, amountToken);
+        token.safeApprove(ROUTER, amountToken);
 
         router.addLiquidityETH{value: msg.value}(
             myTokenAddress,
             amountToken,
             amountTokenMin,
+            amountETHMin,
             msg.sender,
-            block.timeStamp + 6969
+            block.timestamp + 6969
         );
 
         emit liquidityAdded(msg.sender, msg.value, amountToken);
     }
 
-    function swapTokensForExactETH(uint256 amountToken) external {
-        
-    }
+    function swapTokensForExactETH(uint256 amountToken) external {}
 }
