@@ -5,9 +5,10 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 
 contract uniswapLite {
-    address public WethContract = 0xc778417E063141139Fce010982780140Aa0cD5Ab;
+    address public constant WethAddress =
+        0xc778417E063141139Fce010982780140Aa0cD5Ab;
 
-    address public ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
+    address public constant ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
     address public myTokenAddress;
 
     // create an interface for Router
@@ -18,6 +19,7 @@ contract uniswapLite {
 
     //events
     event liquidityAdded(address indexed, uint256 eth, uint256 amount);
+    event fallbackCalled(address indexed, uint256 amount);
     //struct
 
     //tracks eth stored per address
@@ -28,10 +30,15 @@ contract uniswapLite {
         myTokenAddress = _token;
     }
 
+    receive() external payable {
+        emit fallbackCalled(msg.sender, msg.value);
+    }
+
     function addLiquidityForEthAndMytoken(
         uint256 amountToken,
         uint256 amountTokenMin,
-        uint256 amountETHMin
+        uint256 amountETHMin,
+        uint256 deadline
     ) external payable {
         require(
             amountToken >= amountTokenMin,
@@ -55,11 +62,46 @@ contract uniswapLite {
             amountTokenMin,
             amountETHMin,
             msg.sender,
-            block.timestamp + 6969
+            deadline
         );
 
         emit liquidityAdded(msg.sender, msg.value, amountToken);
     }
 
-    function swapTokensForExactETH(uint256 amountToken) external {}
+    function swapTokensForExactETH(
+        uint256 amountETHOut,
+        uint256 amountInMax,
+        uint256 deadline
+    ) external {
+        require(
+            token.allowance(msg.sender, address(this)) >= amountETHOut,
+            "UNISWAPLITE: this contract does not have allowance to access your tokens"
+        );
+        token.safeTransferFrom(msg.sender, address(this), amountETHOut);
+        token.safeApprove(ROUTER, amountETHOut);
+
+        address[] memory path = new address[](2);
+        path[0] = myTokenAddress;
+        path[1] = WethAddress;
+
+        uint256[] memory amounts = router.swapTokensForExactETH(
+            amountETHOut,
+            amountInMax,
+            path,
+            address(this),
+            deadline
+        );
+
+        ethStoredPerAddress[msg.sender] += amounts[1];
+    }
+
+    function withdrawETHStored(uint256 _amount) external {
+        require(
+            ethStoredPerAddress[msg.sender] > _amount,
+            "UNISWAPLITE: insufficient balance"
+        );
+
+        ethStoredPerAddress[msg.sender] -= _amount;
+        payable(msg.sender).transfer(_amount);
+    }
 }
