@@ -39,15 +39,13 @@ describe("UniswapLite", () => {
       const amountETHMin = 1;
       const deadline = 100;
 
-      await uniswapLite
-        .connect(owner)
-        .addLiquidityForEthAndMytoken(
-          amountToken,
-          amountTokenMin,
-          amountETHMin,
-          deadline,
-          { value: 2 }
-        );
+      await uniswapLite.addLiquidityForEthAndMytoken(
+        amountToken,
+        amountTokenMin,
+        amountETHMin,
+        deadline,
+        { value: 2 }
+      );
 
       console.log(await uniswapLite.provider.getBalance(uniswapLite.address));
     });
