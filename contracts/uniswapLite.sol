@@ -20,7 +20,6 @@ contract uniswapLite {
     //events
     event liquidityAdded(address indexed, uint256 eth, uint256 amount);
     event fallbackCalled(address indexed, uint256 amount);
-    //struct
 
     //tracks eth stored per address
     mapping(address => uint256) public ethStoredPerAddress;
@@ -62,34 +61,32 @@ contract uniswapLite {
             amountTokenMin,
             amountETHMin,
             msg.sender,
-            deadline
+            block.timestamp + deadline
         );
 
         emit liquidityAdded(msg.sender, msg.value, amountToken);
     }
 
-    function swapTokensForExactETH(
-        uint256 amountETHOut,
-        uint256 amountInMax,
-        uint256 deadline
-    ) external {
+    function swapTokensForExactETH(uint256 amountIn, uint256 deadline)
+        external
+    {
         require(
-            token.allowance(msg.sender, address(this)) >= amountETHOut,
+            token.allowance(msg.sender, address(this)) >= amountIn,
             "UNISWAPLITE: this contract does not have allowance to access your tokens"
         );
-        token.safeTransferFrom(msg.sender, address(this), amountETHOut);
-        token.safeApprove(ROUTER, amountETHOut);
+        token.safeTransferFrom(msg.sender, address(this), amountIn);
+        token.safeApprove(ROUTER, amountIn);
 
         address[] memory path = new address[](2);
         path[0] = myTokenAddress;
         path[1] = WethAddress;
 
-        uint256[] memory amounts = router.swapTokensForExactETH(
-            amountETHOut,
-            amountInMax,
+        uint256[] memory amounts = router.swapExactTokensForETH(
+            amountIn,
+            2,
             path,
             address(this),
-            deadline
+            block.timestamp + deadline
         );
 
         ethStoredPerAddress[msg.sender] += amounts[1];
@@ -97,7 +94,7 @@ contract uniswapLite {
 
     function withdrawETHStored(uint256 _amount) external {
         require(
-            ethStoredPerAddress[msg.sender] > _amount,
+            ethStoredPerAddress[msg.sender] >= _amount,
             "UNISWAPLITE: insufficient balance"
         );
 
