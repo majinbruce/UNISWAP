@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.4;
 
+/// @title uniswap-contract
+/// @author OMKAR N CHOUDHARI
+/// @notice You can use this contract for only the most basic simulation
+/// @dev All function calls are currently implemented without side effects
+/// @custom:experimental This is an experimental contract.
+
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 
@@ -32,6 +38,13 @@ contract uniswapLite {
     receive() external payable {
         emit fallbackCalled(msg.sender, msg.value);
     }
+
+    /// @notice lets owner add liquidity pair between MyToken & Weth
+    /// @dev deadline parameter could be hardcoded in contract
+    /// @param amountToken    amount of tokens to be added in liquidity pool
+    /// @param amountTokenMin min amount of tokens to be added in liquidity pool
+    /// @param amountETHMin  min amount of eth to be returned if tx reverts
+    /// @param deadline time in seconds after which the tx reverts
 
     function addLiquidityForEthAndMytoken(
         uint256 amountToken,
@@ -67,6 +80,10 @@ contract uniswapLite {
         emit liquidityAdded(msg.sender, msg.value, amountToken);
     }
 
+    /// @notice lets users swap their MyTokens for Weth & stores the corresponding Weth into uniswapLite contract
+    /// @param amountIn amount of tokens to be swapped for wETH
+    /// @param deadline time in seconds after which the tx reverts
+
     function swapTokensForExactETH(uint256 amountIn, uint256 deadline)
         external
     {
@@ -91,6 +108,9 @@ contract uniswapLite {
 
         ethStoredPerAddress[msg.sender] += amounts[1];
     }
+
+    /// @notice lets users withdraw stored Weth for the tokens swapped
+    /// @param _amount amount of wETH to be withdrawn
 
     function withdrawETHStored(uint256 _amount) external {
         require(
